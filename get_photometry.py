@@ -19,7 +19,7 @@ from core.database import DustPediaDatabase
 # -----------------------------------------------------------------
 
 # Parse arguments
-parser = argparse.ArgumentParser(description="get image")
+parser = argparse.ArgumentParser(description="get photometry")
 parser.add_argument("username", type=str, help="DustPedia archive username")
 parser.add_argument("password", type=str, help="DustPedia archive password")
 arguments = parser.parse_args()

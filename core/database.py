@@ -651,7 +651,7 @@ class DustPediaDatabase(object):
         print("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
 
         url = self.get_photometry_cutouts_url(galaxy_name)
-        network.download_file(url, dir_path, session=self.session, progress_bar=progress_bar)
+        return network.download_file(url, dir_path, session=self.session, progress_bar=progress_bar)
 
     # -----------------------------------------------------------------
 

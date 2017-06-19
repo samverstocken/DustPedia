@@ -16,7 +16,7 @@ import subprocess
 # -----------------------------------------------------------------
 
 # Parse arguments
-parser = argparse.ArgumentParser(description="get image")
+parser = argparse.ArgumentParser(description="examples")
 parser.add_argument("username", type=str, help="DustPedia archive username")
 parser.add_argument("password", type=str, help="DustPedia archive password")
 arguments = parser.parse_args()
@@ -184,13 +184,30 @@ print("")
 
 tenth = "python show_wcs.py " + arguments.username + " " + arguments.password + " NGC3031_Planck_10600"
 
-print("9.")
+print("10.")
 print("Executing: '" + tenth + "'")
 print("")
 print("gives:")
 print("")
 
 output = subprocess.check_output(tenth, shell=True)
+for line in output.split("\n"): print("    " + line)
+
+print("")
+print("-----------------------------------------------------------------")
+print("")
+
+# -----------------------------------------------------------------
+
+eleventh = "python show_cutouts.py " + arguments.username + " " + arguments.password + " M77"
+
+print("11.")
+print("Executing: '" + eleventh + "'")
+print("")
+print("gives:")
+print("")
+
+output = subprocess.check_output(eleventh, shell=True)
 for line in output.split("\n"): print("    " + line)
 
 print("")
