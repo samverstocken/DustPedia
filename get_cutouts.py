@@ -18,38 +18,14 @@ import subprocess
 # Import DustPedia API
 from core.database import DustPediaDatabase
 from core.sample import resolve_name
-
-# -----------------------------------------------------------------
-
-def open_file(path, wait=False):
-
-    """
-    This function ...
-    :param path:
-    :param wait:
-    :return:
-    """
-
-    # Check if existing
-    if not os.path.isfile(path): raise ValueError("The file '" + path + "' does not exist")
-
-    # Determine command
-    if platform.system() == "Darwin": command = ["open", path]
-    else: command = ["xdg-open", path]
-
-    # Call the command
-    if wait:
-        subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-        time.wait(10)
-    else: subprocess.Popen(command)
     
 # -----------------------------------------------------------------
 
 # Parse arguments
-parser = argparse.ArgumentParser(description="show cutouts")
+parser = argparse.ArgumentParser(description="get cutouts")
 parser.add_argument("username", type=str, help="DustPedia archive username")
 parser.add_argument("password", type=str, help="DustPedia archive password")
-parser.add_argument("galaxy", type=str, help="the galaxy name")
+parser.add_argument("galaxies", type=str, help="the galaxy names")
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
@@ -66,19 +42,20 @@ path = os.getcwd()
 
 # -----------------------------------------------------------------
 
-# Resolve the name
-galaxy_name = resolve_name(arguments.galaxy)
+# Resolve the names
+galaxy_names = [resolve_name(name.strip()) for name in arguments.galaxies.split(",")]
+print("galaxies: ", galaxy_names)
 
 # -----------------------------------------------------------------
 
-# Download
-filepath = database.download_photometry_cutouts(galaxy_name, path)
+# Loop over the galaxies, download the cutouts png
+for galaxy_name in galaxy_names:
 
-# Change name
-new_path = "thumbnails_" + galaxy_name + ".png"
-os.rename(filepath, new_path)
+        # Download
+        filepath = database.download_photometry_cutouts(galaxy_name, path)
 
-# Open
-open_file(new_path)
+        # Change name
+        new_path = "thumbnails_" + galaxy_name + ".png"
+        os.rename(filepath, new_path)
 
 # -----------------------------------------------------------------
