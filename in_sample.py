@@ -19,8 +19,6 @@ from core.sample import resolve_name
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="get image")
-parser.add_argument("username", type=str, help="DustPedia archive username")
-parser.add_argument("password", type=str, help="DustPedia archive password")
 parser.add_argument("galaxy", type=str, help="galaxy name")
 arguments = parser.parse_args()
 
