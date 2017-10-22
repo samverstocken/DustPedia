@@ -41,7 +41,35 @@ cigale = database.get_cigale_parameters(galaxy_name)
 
 # -----------------------------------------------------------------
 
-parameter_names = set(mbb.keys()) | set(cigale.keys())
+def union(*sequences):
+
+    """
+    This function ...
+    :param sequences:
+    :return:
+    """
+
+    if len(sequences) == 0: return []
+    elif len(sequences) == 1: return sequences[0][:]  # make copy of the list
+
+    # OWN IMPLEMENTATION: quadratic complexity!
+    else:
+
+        elements = []
+
+        # Just loop over each sequence sequentially
+        for sequence in sequences:
+            for item in sequence:
+                if item not in elements: elements.append(item)
+
+        # Return the list of elements
+        return elements
+
+# -----------------------------------------------------------------
+
+# Doesn't retain order
+# parameter_names = set(mbb.keys()) | set(cigale.keys())
+parameter_names = union(mbb.keys(), cigale.keys())
 
 # -----------------------------------------------------------------
 
@@ -54,10 +82,15 @@ for name in parameter_names:
         print("")
         print("    * [MBB]: " + str(mbb[name]))
         print("    * [CIGALE]: " + str(cigale[name]))
-        diff = abs(mbb[name] - cigale[name])
-        reldiff = abs(mbb[name] - cigale[name]) / mbb[name]
-        print("    * difference: " + str(diff))
-        print("    * relative differenfce: " + str(reldiff * 100) + "%")
+
+        if not name.endswith("_error"):
+
+            diff = abs(mbb[name] - cigale[name])
+            reldiff = abs(mbb[name] - cigale[name]) / mbb[name]
+            print("")
+            print("     => difference: " + str(diff))
+            print("     => relative difference: " + str(reldiff * 100) + "%")
+
         print("")
 
     elif name in mbb:
