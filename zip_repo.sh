@@ -1,0 +1,1 @@
+git archive --format zip --output ../dustpedia_scripts.zip master
