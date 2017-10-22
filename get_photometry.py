@@ -20,16 +20,20 @@ from core.database import DustPediaDatabase
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="get photometry")
-parser.add_argument("username", type=str, help="DustPedia archive username")
-parser.add_argument("password", type=str, help="DustPedia archive password")
+parser.add_argument("-o", type=str, help="output path")
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
 database = DustPediaDatabase()
-database.login(arguments.username, arguments.password)
 
-path = os.getcwd()
+# -----------------------------------------------------------------
+
+if arguments.o is not None: path = arguments.o
+else: path = os.getcwd()
+if not os.path.isdir(path): os.mkdir(path)
+
+# -----------------------------------------------------------------
 
 # Download
 database.download_photometry(path)

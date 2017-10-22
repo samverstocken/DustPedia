@@ -120,6 +120,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
     This function ...
     :param url
     :param path:
+    :param new_name:
     :param overwrite:
     :param progress_bar:
     :param stream

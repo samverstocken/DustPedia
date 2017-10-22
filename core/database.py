@@ -8,16 +8,20 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import shutil
 import requests
 from lxml import html
 import os.path
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.io.fits import getheader
 from astropy.wcs import WCS
+from astropy.units import Unit
 
 # Import other DustPedia modules
 from . import network, tables, types
+from .utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -30,11 +34,49 @@ login_link = "http://dustpedia.astro.noa.gr/Account/Login"
 # data: http://dustpedia.astro.noa.gr/Data
 data_link = "http://dustpedia.astro.noa.gr/Data"
 
+# MBB: http://dustpedia.astro.noa.gr/MBB
+mbb_link = "http://dustpedia.astro.noa.gr/MBB"
+
 # user
 user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 
 # print preview
 print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
+
+# -----------------------------------------------------------------
+
+# http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv
+
+#all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv"
+all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results_v2.dat"
+
+# emissivity of κλ=8.52 x (250/λ)1.855 cm2/gr adapted to the THEMIS model
+# A bootstrap analysis was used to calculate the uncertainties in dust temperatures and masses.
+
+# -----------------------------------------------------------------
+
+all_cigale_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/cigale/dustpedia_cigale_results_v4.dat"
+
+# -----------------------------------------------------------------
+
+def create_temp_dir(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    path = os.path.join(os.getcwd(), name)
+
+    # Check whether the directory does not exist yet
+    if not os.path.isdir(path):
+
+        # Create the directory
+        os.mkdir(path)
+
+    # Return the path
+    return path
 
 # -----------------------------------------------------------------
 
@@ -50,6 +92,9 @@ class DustPediaDatabase(object):
         The constructor ...
         :return:
         """
+
+        # Determine the path to a temporary directory
+        self.temp_path = create_temp_dir("_tmp_database")
 
         # Create the session
         self.session = requests.session()
@@ -125,6 +170,9 @@ class DustPediaDatabase(object):
         The destructor ...
         :return:
         """
+
+        # Remove the temporary directory
+        if os.path.isdir(self.temp_path): shutil.rmtree(self.temp_path)
 
         # Log out from the database
         self.logout()
@@ -620,6 +668,589 @@ class DustPediaDatabase(object):
         table = tables.new(data, names)
 
         return table
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Inform the user
+        print("Getting general information about galaxy '" + galaxy_name + "' ...")
+
+        # http://dustpedia.astro.noa.gr/MBB?GalaxyName=NGC3031&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search
+
+        r = self.session.get(mbb_link + "?GalaxyName=" + galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        table_list = [e for e in tree.iter() if e.tag == 'table']
+        table = table_list[-1]
+
+        table_rows = [e for e in table.iter() if e.tag == 'tr']
+
+        galaxy_info = None
+
+        for row in table_rows[1:]:
+
+            column_index = 0
+
+            for e in row.iter():
+
+                if e.tag != "td": continue
+
+                if column_index == 0:
+
+                    # for ee in e.iterchildren(): print(ee.text_content())
+                    # for ee in e.iterdescendants(): print(ee.text_content())
+                    # for ee in e.itersiblings(): print(ee.text_content())
+
+                    galaxy_info = e.text_content()
+
+                    # print(galaxy_info)
+
+                column_index += 1
+
+        splitted = galaxy_info.split("\r\n")
+
+        lines = [split.strip() for split in splitted if split.strip()]
+
+        #return lines
+
+        # Dust Temperature (K): 22.6±0.7
+        # Dust Mass (M_sun): 4900000±1000000
+        # Dust Luminosity (L_sun): 2.10E+09
+
+        temperature = None
+        temperature_error = None
+        mass = None
+        mass_error = None
+        luminosity = None
+        luminosity_error = None
+
+        #for index in range(len(lines)):
+        index = 0
+        while index < len(lines):
+
+            line = lines[index]
+
+            if "Dust Temperature" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                temperature = value * Unit("K")
+                temperature_error = error * Unit("K")
+
+                index += 1
+
+            elif "Dust Mass" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                mass = value * Unit("Msun")
+                mass_error = error * Unit("Msun")
+
+                index += 1
+
+            elif "Dust Luminosity" in line:
+
+                next_line = lines[index+1]
+
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                #value = float(next_line)
+                #error = None
+
+                luminosity = value * Unit("Lsun")
+                luminosity_error = error * Unit("Lsun")
+                #luminosity_error = None
+
+            index += 1
+
+        # Return the parameters
+        return mass, mass_error, temperature, temperature_error, luminosity, luminosity_error
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_plot(self, galaxy_name, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param path:
+        :return:
+        """
+
+        # http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/NGC3031.png
+
+        url = "http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/" + galaxy_name + ".png"
+
+        # Download
+        filepath = network.download_file(url, path, session=self.session, progress_bar=True)
+
+        # Return the filepath
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_table(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        filepath = network.download_file(all_mmb_results_url, path, session=self.session, progress_bar=True)
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filepath = self.download_dust_black_body_table(self.temp_path)
+        return tables.from_file(filepath, format="ascii")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_black_body_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_black_body_table()
+
+    # -----------------------------------------------------------------
+
+    def get_black_body_galaxy_index(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = tables.find_index(self.dust_black_body_table, galaxy_name, "Name")
+        return index
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_black_body(self, galaxy_name):
+
+        """
+        This function ....
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Mdust__Mo"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_error_black_body(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Mdust_err"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_temperature_black_body(self, galaxy_name):
+
+        """
+        This function ....
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Tdust__K"][index] * Unit("K")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_temperature_error_black_body(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Tdust_err"][index] * Unit("K")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_luminosity_black_body(self, galaxy_name):
+
+        """
+        This fucntion ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Ldust__Lo"][index] * Unit("Lsun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_luminosity_error_black_body(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["Ldust_err"][index] * Unit("Lsun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_chi_squared_black_body(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_black_body_galaxy_index(galaxy_name)
+        value = self.dust_black_body_table["nchi2"][index]
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_table_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the index of the galaxy in the black body table
+        index = self.get_black_body_galaxy_index(galaxy_name)
+
+        # Get the values
+        dust_temperature = self.dust_black_body_table["Tdust__K"][index] * Unit("K")
+        dust_temperature_error = self.dust_black_body_table["Tdust_err"][index] * Unit("K")
+        dust_luminosity = self.dust_black_body_table["Ldust__Lo"][index] * Unit("Lsun")
+        dust_luminosity_error = self.dust_black_body_table["Ldust_err"][index] * Unit("Lsun")
+        dust_mass = self.dust_black_body_table["Mdust__Mo"][index] * Unit("Msun")
+        dust_mass_error = self.dust_black_body_table["Mdust_err"][index] * Unit("Msun")
+        chi_squared = self.dust_black_body_table["nchi2"][index]
+
+        # Create the parameters dictionary
+        parameters = OrderedDict()
+        parameters["dust_temperature"] = dust_temperature
+        parameters["dust_temperature_error"] = dust_temperature_error
+        parameters["dust_luminosity"] = dust_luminosity
+        parameters["dust_luminosity_error"] = dust_luminosity_error
+        parameters["dust_mass"] = dust_mass
+        parameters["dust_mass_error"] = dust_mass_error
+        parameters["chi_squared"] = chi_squared
+
+        # Return the parameters dictionary
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def download_cigale_table(self, path):
+
+        """
+        This function ....
+        :param path:
+        :return:
+        """
+
+        filepath = network.download_file(all_cigale_results_url, path, session=self.session, progress_bar=True)
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def get_cigale_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filepath = self.download_cigale_table(self.temp_path)
+        return tables.from_file(filepath, format="ascii")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cigale_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_cigale_table()
+
+    # -----------------------------------------------------------------
+
+    def get_cigale_galaxy_index(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the galaxy index
+        index = tables.find_index(self.cigale_table, galaxy_name, "Name")
+        return index
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Mdust__Mo"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_error_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Mdust_err"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["SFR__Mo_per_yr"][index] * Unit("Msun/yr")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_error_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["SFR_err"][index] * Unit("Msun/yr")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_mass_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Mstar__Mo"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_mass_error_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Mstar_err"][index] * Unit("Msun")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_luminosity_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Lstar__W"][index] * Unit("W")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_luminosity_error_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Lstar_err"][index] * Unit("W")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_luminosity_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Ldust__W"][index] * Unit("W")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_dust_luminosity_error_cigale(self, galaxy_name):
+
+        """
+        THis function ....
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["Ldust_err"][index] * Unit("W")
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["FUV_att"][index]
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_error_cigale(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        index = self.get_cigale_galaxy_index(galaxy_name)
+        value = self.cigale_table["FUV_att_err"][index]
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_cigale_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the index of the galaxy in the Cigale results table
+        index = self.get_cigale_galaxy_index(galaxy_name)
+
+        # Get the parameters
+        dust_mass = self.cigale_table["Mdust__Mo"][index] * Unit("Msun")
+        dust_mass_error = self.cigale_table["Mdust_err"][index] * Unit("Msun")
+        stellar_mass = self.cigale_table["Mstar__Mo"][index] * Unit("Msun")
+        stellar_mass_error = self.cigale_table["Mstar_err"][index] * Unit("Msun")
+        sfr = self.cigale_table["SFR__Mo_per_yr"][index] * Unit("Msun/yr")
+        sfr_error = self.cigale_table["SFR_err"][index] * Unit("Msun/yr")
+        stellar_luminosity = self.cigale_table["Lstar__W"][index] * Unit("W")
+        stellar_luminosity_error = self.cigale_table["Lstar_err"][index] * Unit("W")
+        dust_luminosity = self.cigale_table["Ldust__W"][index] * Unit("W")
+        dust_luminosity_error = self.cigale_table["Ldust_err"][index] * Unit("W")
+        fuv_attenuation = self.cigale_table["FUV_att"][index]
+        fuv_attenuation_error = self.cigale_table["FUV_att_err"][index]
+
+        # Create the parameters dictionary
+        parameters = OrderedDict()
+        parameters["sfr"] = sfr
+        parameters["sfr_error"] = sfr_error
+        parameters["stellar_mass"] = stellar_mass
+        parameters["stellar_mass_error"] = stellar_mass_error
+        parameters["dust_mass"] = dust_mass
+        parameters["dust_mass_error"] = dust_mass_error
+        parameters["stellar_luminosity"] = stellar_luminosity
+        parameters["stellar_luminosity_error"] = stellar_luminosity_error
+        parameters["dust_luminosity"] = dust_luminosity
+        parameters["dust_luminosity_error"] = dust_luminosity_error
+        parameters["fuv_attenuation"] = fuv_attenuation
+        parameters["fuv_attenuation_error"] = fuv_attenuation_error
+
+        # Return the parameters dictionary
+        return parameters
 
     # -----------------------------------------------------------------
 

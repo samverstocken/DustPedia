@@ -17,9 +17,14 @@ import subprocess
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="examples")
-parser.add_argument("username", type=str, help="DustPedia archive username")
-parser.add_argument("password", type=str, help="DustPedia archive password")
+#parser.add_argument("username", type=str, help="DustPedia archive username", nargs='?')
+#parser.add_argument("password", type=str, help="DustPedia archive password", nargs='?')
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+#if arguments.username is None: print("Username is not provided: some commands will be unavailable")
+#elif arguments.password is None: raise ValueError("Username is provided but not the password")
 
 # -----------------------------------------------------------------
 
@@ -29,7 +34,7 @@ print("")
 
 # # -----------------------------------------------------------------
 
-first = "python in_sample.py " + arguments.username + " " + arguments.password + " M77"
+first = "python in_sample.py M77"
 
 print("1.")
 print("Executing: '" + first + "'")
@@ -46,7 +51,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-second = "python in_sample.py " + arguments.username + " " + arguments.password + " M31"
+second = "python in_sample.py M31"
 
 print("2.")
 print("Executing: '" + second + "'")
@@ -63,7 +68,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-third = "python get_urls.py " + arguments.username + " " + arguments.password + " M81"
+third = "python get_urls.py M81"
 
 print("3.")
 print("Executing: '" + third + "'")
@@ -80,7 +85,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-fourth = "python get_info.py " + arguments.username + " " + arguments.password + " M51"
+fourth = "python get_info.py M51"
 
 print("4.")
 print("Executing: '" + fourth + "'")
@@ -97,7 +102,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-fifth = "python get_image.py " + arguments.username + " " + arguments.password + " NGC3031_Planck_10600"
+fifth = "python get_image.py NGC3031_Planck_10600"
 
 print("5.")
 print("Executing: '" + fifth + "'")
@@ -114,7 +119,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-sixth = "python get_images.py " + arguments.username + " " + arguments.password + " NGC1068 Planck"
+sixth = "python get_images.py NGC1068 Planck -o images"
 
 print("6.")
 print("Executing: '" + sixth + "'")
@@ -148,7 +153,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-eight = "python get_photometry.py " + arguments.username + " " + arguments.password
+eight = "python get_photometry.py -o photometry"
 
 print("8.")
 print("Executing: '" + eight + "'")
@@ -165,7 +170,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-nineth = "python show_header.py " + arguments.username + " " + arguments.password + " NGC3031_Planck_10600"
+nineth = "python show_header.py NGC3031_Planck_10600"
 
 print("9.")
 print("Executing: '" + nineth + "'")
@@ -182,7 +187,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-tenth = "python show_wcs.py " + arguments.username + " " + arguments.password + " NGC3031_Planck_10600"
+tenth = "python show_wcs.py NGC3031_Planck_10600"
 
 print("10.")
 print("Executing: '" + tenth + "'")
@@ -199,7 +204,7 @@ print("")
 
 # -----------------------------------------------------------------
 
-eleventh = "python show_cutouts.py " + arguments.username + " " + arguments.password + " M77"
+eleventh = "python show_cutouts.py M77"
 
 print("11.")
 print("Executing: '" + eleventh + "'")
@@ -208,6 +213,57 @@ print("gives:")
 print("")
 
 output = subprocess.check_output(eleventh, shell=True)
+for line in output.split("\n"): print("    " + line)
+
+print("")
+print("-----------------------------------------------------------------")
+print("")
+
+# -----------------------------------------------------------------
+
+twelfth = "python get_cigale_parameters.py M81"
+
+print("12.")
+print("Executing: '" + twelfth + "'")
+print("")
+print("gives:")
+print("")
+
+output = subprocess.check_output(twelfth, shell=True)
+for line in output.split("\n"): print("    " + line)
+
+print("")
+print("-----------------------------------------------------------------")
+print("")
+
+# -----------------------------------------------------------------
+
+thirteenth = "python get_mbb_parameters.py M81"
+
+print("13.")
+print("Executing: '" + thirteenth + "'")
+print("")
+print("gives:")
+print("")
+
+output = subprocess.check_output(thirteenth, shell=True)
+for line in output.split("\n"): print("    " + line)
+
+print("")
+print("-----------------------------------------------------------------")
+print("")
+
+# -----------------------------------------------------------------
+
+fourteenth = "python get_parameters.py M81"
+
+print("14.")
+print("Executing: '" + fourteenth + "'")
+print("")
+print("gives:")
+print("")
+
+output = subprocess.check_output(fourteenth, shell=True)
 for line in output.split("\n"): print("    " + line)
 
 print("")

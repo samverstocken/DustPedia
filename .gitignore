@@ -87,3 +87,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+_tmp_database
+images
+photometry
+thumbnails_*
+*.fits

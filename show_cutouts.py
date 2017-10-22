@@ -47,8 +47,6 @@ def open_file(path, wait=False):
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="show cutouts")
-parser.add_argument("username", type=str, help="DustPedia archive username")
-parser.add_argument("password", type=str, help="DustPedia archive password")
 parser.add_argument("galaxy", type=str, help="the galaxy name")
 arguments = parser.parse_args()
 
@@ -56,9 +54,6 @@ arguments = parser.parse_args()
 
 # Create the database
 database = DustPediaDatabase()
-
-# Login
-database.login(arguments.username, arguments.password)
 
 # -----------------------------------------------------------------
 

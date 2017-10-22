@@ -25,11 +25,10 @@ instruments = ["GALEX", "SDSS", "DSS", "2MASS", "Spitzer", "WISE", "PACS", "SPIR
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="get image")
-parser.add_argument("username", type=str, help="DustPedia archive username")
-parser.add_argument("password", type=str, help="DustPedia archive password")
 parser.add_argument("galaxy", type=str, help="the galaxy name")
 parser.add_argument("instrument", type=str, nargs='?', choices=instruments, help="the instrument (optional)")
 parser.add_argument("--errors", action="store_true", help="also get error maps")
+parser.add_argument("-o", type=str, help="output path")
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
@@ -42,12 +41,11 @@ galaxy_name = resolve_name(arguments.galaxy)
 # Create the database
 database = DustPediaDatabase()
 
-# Login
-database.login(arguments.username, arguments.password)
-
 # -----------------------------------------------------------------
 
-path = os.getcwd()
+if arguments.o is not None: path = arguments.o
+else: path = os.getcwd()
+if not os.path.isdir(path): os.mkdir(path)
 
 # -----------------------------------------------------------------
 
