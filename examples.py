@@ -17,14 +17,15 @@ import subprocess
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="examples")
-#parser.add_argument("username", type=str, help="DustPedia archive username", nargs='?')
-#parser.add_argument("password", type=str, help="DustPedia archive password", nargs='?')
+parser.add_argument("username", type=str, help="DustPedia archive username", nargs='?')
+parser.add_argument("password", type=str, help="DustPedia archive password", nargs='?')
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-#if arguments.username is None: print("Username is not provided: some commands will be unavailable")
-#elif arguments.password is None: raise ValueError("Username is provided but not the password")
+# Check presence of username and password
+if arguments.username is None: print("Username is not provided: some commands will be unavailable")
+elif arguments.password is None: raise ValueError("Username is provided but not the password")
 
 # -----------------------------------------------------------------
 
@@ -221,53 +222,59 @@ print("")
 
 # -----------------------------------------------------------------
 
-twelfth = "python get_cigale_parameters.py M81"
+if arguments.username is not None:
 
-print("12.")
-print("Executing: '" + twelfth + "'")
-print("")
-print("gives:")
-print("")
+    twelfth = "python get_cigale_parameters.py " + arguments.username + " " + arguments.password + " M81"
 
-output = subprocess.check_output(twelfth, shell=True)
-for line in output.split("\n"): print("    " + line)
+    print("12.")
+    print("Executing: '" + twelfth + "'")
+    print("")
+    print("gives:")
+    print("")
 
-print("")
-print("-----------------------------------------------------------------")
-print("")
+    output = subprocess.check_output(twelfth, shell=True)
+    for line in output.split("\n"): print("    " + line)
 
-# -----------------------------------------------------------------
-
-thirteenth = "python get_mbb_parameters.py M81"
-
-print("13.")
-print("Executing: '" + thirteenth + "'")
-print("")
-print("gives:")
-print("")
-
-output = subprocess.check_output(thirteenth, shell=True)
-for line in output.split("\n"): print("    " + line)
-
-print("")
-print("-----------------------------------------------------------------")
-print("")
+    print("")
+    print("-----------------------------------------------------------------")
+    print("")
 
 # -----------------------------------------------------------------
 
-fourteenth = "python get_parameters.py M81"
+if arguments.username is not None:
 
-print("14.")
-print("Executing: '" + fourteenth + "'")
-print("")
-print("gives:")
-print("")
+    thirteenth = "python get_mbb_parameters.py " + arguments.username + " " + arguments.password + " M81"
 
-output = subprocess.check_output(fourteenth, shell=True)
-for line in output.split("\n"): print("    " + line)
+    print("13.")
+    print("Executing: '" + thirteenth + "'")
+    print("")
+    print("gives:")
+    print("")
 
-print("")
-print("-----------------------------------------------------------------")
-print("")
+    output = subprocess.check_output(thirteenth, shell=True)
+    for line in output.split("\n"): print("    " + line)
+
+    print("")
+    print("-----------------------------------------------------------------")
+    print("")
+
+# -----------------------------------------------------------------
+
+if arguments.username is not None:
+
+    fourteenth = "python get_parameters.py " + arguments.username + " " + arguments.password +" M81"
+
+    print("14.")
+    print("Executing: '" + fourteenth + "'")
+    print("")
+    print("gives:")
+    print("")
+
+    output = subprocess.check_output(fourteenth, shell=True)
+    for line in output.split("\n"): print("    " + line)
+
+    print("")
+    print("-----------------------------------------------------------------")
+    print("")
 
 # -----------------------------------------------------------------

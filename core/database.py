@@ -43,6 +43,9 @@ user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 # print preview
 print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
 
+# Account page
+account_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
+
 # -----------------------------------------------------------------
 
 # http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv
@@ -128,6 +131,28 @@ class DustPediaDatabase(object):
         # If the login failed, raise an error
         if not self.connected: raise RuntimeError("Login failed")
         else: print("Succesfully connected to the DustPedia database")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_user_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.connected: raise ValueError("Must be logged in")
+
+        # Get account page text
+        r = self.session.get(account_link)
+        page_as_string = r.content
+
+        # Get the name
+        full_name = page_as_string.split("    Welcome ")[1].split(",")[0]
+
+        # Return the name
+        return full_name
 
     # -----------------------------------------------------------------
 
